@@ -1,0 +1,29 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #13231f;
+  background: #f8faf9;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 720px;
+  margin: 18vh auto;
+  padding: 32px;
+}
+.label {
+  color: #35645a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+}
+h1 {
+  font-size: clamp(36px, 6vw, 64px);
+  letter-spacing: -2px;
+  margin: 12px 0;
+}
+main > p:last-child {
+  color: #536660;
+  font-size: 18px;
+  line-height: 1.6;
+}
