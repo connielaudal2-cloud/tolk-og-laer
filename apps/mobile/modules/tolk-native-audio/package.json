@@ -1,0 +1,14 @@
+{
+  "name": "@tolk-og-laer/native-audio",
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "private": true,
+  "peerDependencies": {
+    "expo": "*",
+    "react-native": "*"
+  },
+  "dependencies": {
+    "expo-modules-core": "~57.0.14"
+  }
+}
