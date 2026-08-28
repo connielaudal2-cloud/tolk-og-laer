@@ -10,6 +10,7 @@
     "build": "turbo run build",
     "check": "turbo run typecheck lint",
     "test": "turbo run test",
+    "test:rls:remote": "pnpm --filter @tolk-og-laer/api-client build && pnpm --filter @tolk-og-laer/rls-tests test:remote",
     "format:check": "prettier --check .",
     "mobile": "pnpm --filter @tolk-og-laer/mobile start"
   },

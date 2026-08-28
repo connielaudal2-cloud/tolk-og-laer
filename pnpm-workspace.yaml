@@ -2,6 +2,8 @@ packages:
   - apps/*
   - services/*
   - packages/*
+  - supabase/types
+  - tests/rls
 
 minimumReleaseAgeExclude:
   - '@expo/cli@57.0.20'

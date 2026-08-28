@@ -1,0 +1,16 @@
+{
+  "name": "@tolk-og-laer/rls-tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint remote.rls.test.ts",
+    "test": "vitest run --passWithNoTests --exclude remote.rls.test.ts",
+    "test:remote": "vitest run remote.rls.test.ts"
+  },
+  "dependencies": {
+    "@tolk-og-laer/api-client": "workspace:*"
+  }
+}

@@ -1,3 +1,3 @@
 # API client
 
-Versjonert klient for `/v1`-API og autentisert realtime handshake legges her.
+Typed Supabase-klient og enkel Auth-grunnmur. Mobilappen leverer sikker persistent storage; servermiljøer kan levere egen storage eller bruke kortlivede klienter.
