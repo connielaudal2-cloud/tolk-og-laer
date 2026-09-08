@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export * from './audio-processing.js';
+
 export const REALTIME_SCHEMA_VERSION = '1' as const;
 export const schemaVersion = z.literal(REALTIME_SCHEMA_VERSION);
 export const sessionId = z.string().uuid();
