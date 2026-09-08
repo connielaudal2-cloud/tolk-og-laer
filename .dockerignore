@@ -1,0 +1,14 @@
+node_modules
+.pnpm-store
+.turbo
+dist
+coverage
+.expo
+.netlify
+.supabase
+.git
+.env
+.env.*
+*.log
+apps/mobile/ios
+apps/mobile/android
