@@ -5,16 +5,34 @@
       "developmentClient": true,
       "distribution": "internal",
       "environment": "development",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ipkugzwdhrbnqvwgxven.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_w0ogzzyNNWCAmyjo1Ke4qg_6Cxv12rO",
+        "EXPO_PUBLIC_API_URL": "https://tolk-og-laer.netlify.app",
+        "EXPO_PUBLIC_REALTIME_URL": "wss://realtime-production-bbae.up.railway.app/v1/realtime"
+      },
       "ios": { "resourceClass": "m-medium" }
     },
     "preview": {
       "distribution": "internal",
       "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ipkugzwdhrbnqvwgxven.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_w0ogzzyNNWCAmyjo1Ke4qg_6Cxv12rO",
+        "EXPO_PUBLIC_API_URL": "https://tolk-og-laer.netlify.app",
+        "EXPO_PUBLIC_REALTIME_URL": "wss://realtime-production-bbae.up.railway.app/v1/realtime"
+      },
       "ios": { "resourceClass": "m-medium" }
     },
     "production": {
       "autoIncrement": true,
       "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ipkugzwdhrbnqvwgxven.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_w0ogzzyNNWCAmyjo1Ke4qg_6Cxv12rO",
+        "EXPO_PUBLIC_API_URL": "https://tolk-og-laer.netlify.app",
+        "EXPO_PUBLIC_REALTIME_URL": "wss://realtime-production-bbae.up.railway.app/v1/realtime"
+      },
       "ios": { "resourceClass": "m-medium" }
     }
   },
