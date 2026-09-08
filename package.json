@@ -8,8 +8,8 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "check": "turbo run typecheck lint",
-    "test": "turbo run test",
+    "check": "turbo run typecheck lint && eslint netlify/functions && tsc -p netlify/functions/tsconfig.json",
+    "test": "turbo run test && vitest run netlify/functions/translation-sessions.test.ts",
     "test:rls:remote": "pnpm --filter @tolk-og-laer/api-client build && pnpm --filter @tolk-og-laer/rls-tests test:remote",
     "format:check": "prettier --check .",
     "mobile": "pnpm --filter @tolk-og-laer/mobile start"
