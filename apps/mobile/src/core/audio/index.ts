@@ -20,3 +20,7 @@ export {
   type NativeAudioStreamOptions,
   type NativeCaptureAdapter,
 } from './stream';
+export {
+  createNativeAudioStream,
+  type NativeRuntimeAudioStreamOptions,
+} from './native-stream';
