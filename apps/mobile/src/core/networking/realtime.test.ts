@@ -43,7 +43,7 @@ describe('RealtimeTransport', () => {
         url: 'wss://realtime.example.test',
         accessToken: 'token',
         onEvent: vi.fn(),
-        createSocket: () => socket,
+        createSocket: () => socket as unknown as WebSocket,
       });
       let resolved = false;
       const pending = transport.connectAndWait(1000).then(() => {
