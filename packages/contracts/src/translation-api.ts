@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { supportedSourceLanguage } from './index.js';
+import { supportedSourceLanguage } from './language-contracts.js';
 
 export const translationRetentionMode = z.enum(['none', 'session', 'until_deleted']);
 
