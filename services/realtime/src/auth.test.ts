@@ -5,8 +5,10 @@ const sessionId = '550e8400-e29b-41d4-a716-446655440000';
 
 describe('SupabaseRealtimeAuth', () => {
   it('verifies users with the public key and bearer token', async () => {
-    const fetcher = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+    const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      expect(String(input)).toBe('https://example.supabase.co/auth/v1/user');
       expect((init?.headers as Record<string, string>).apikey).toBe('publishable');
+      expect((init?.headers as Record<string, string>).authorization).toBe('Bearer token');
       return new Response(JSON.stringify({ id: 'user-1' }), { status: 200 });
     });
     const auth = new SupabaseRealtimeAuth({
@@ -18,8 +20,9 @@ describe('SupabaseRealtimeAuth', () => {
   });
 
   it('uses RLS when authorizing translation sessions', async () => {
-    const fetcher = vi.fn(async (input: string | URL | Request, _init?: RequestInit) => {
+    const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       expect(String(input)).toContain(`id=eq.${sessionId}`);
+      expect((init?.headers as Record<string, string>).authorization).toBe('Bearer token');
       return new Response(JSON.stringify([{ id: sessionId }]), { status: 200 });
     });
     const auth = new SupabaseRealtimeAuth({
