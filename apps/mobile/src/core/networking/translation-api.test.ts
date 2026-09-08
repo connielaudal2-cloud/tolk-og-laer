@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { TranslationApiError, TranslationSessionApi } from './translation-api';
+import { TranslationSessionApi } from './translation-api';
+import type { TranslationApiError } from './translation-api';
 
 const sessionId = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -33,6 +34,8 @@ describe('TranslationSessionApi', () => {
     const api = new TranslationSessionApi('https://api.example.test', fetcher as typeof fetch);
     await expect(
       api.create('token', { sourceLanguages: ['fr'], targetLanguage: 'nb', retentionMode: 'none' }),
-    ).rejects.toEqual(expect.objectContaining<Partial<TranslationApiError>>({ status: 401, code: 'unauthorized' }));
+    ).rejects.toEqual(
+      expect.objectContaining<Partial<TranslationApiError>>({ status: 401, code: 'unauthorized' }),
+    );
   });
 });
