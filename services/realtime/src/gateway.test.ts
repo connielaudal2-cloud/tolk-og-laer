@@ -9,6 +9,7 @@ class FakeConnection {
   closed?: { code: number; reason: string };
   private messageHandler?: (message: RealtimeSocketMessage) => void;
   private closeHandler?: () => void;
+  private activityHandler?: () => void;
 
   onMessage(handler: (message: RealtimeSocketMessage) => void) {
     this.messageHandler = handler;
@@ -17,6 +18,11 @@ class FakeConnection {
 
   onClose(handler: () => void) {
     this.closeHandler = handler;
+    return () => undefined;
+  }
+
+  onActivity(handler: () => void) {
+    this.activityHandler = handler;
     return () => undefined;
   }
 
@@ -30,6 +36,7 @@ class FakeConnection {
   }
 
   emit(message: RealtimeSocketMessage) {
+    this.activityHandler?.();
     this.messageHandler?.(message);
   }
 }
