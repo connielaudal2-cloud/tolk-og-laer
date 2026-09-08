@@ -1,13 +1,15 @@
 import { z } from 'zod';
+import { supportedSourceLanguage } from './language-contracts.js';
 
 export * from './audio-processing.js';
+export * from './language-contracts.js';
+export * from './translation-api.js';
 
 export const REALTIME_SCHEMA_VERSION = '1' as const;
 export const schemaVersion = z.literal(REALTIME_SCHEMA_VERSION);
 export const sessionId = z.string().uuid();
 export const sequenceNumber = z.number().int().nonnegative();
 export const speakerLabel = z.enum(['Person 1', 'Person 2', 'Person 3']);
-export const supportedSourceLanguage = z.enum(['fr', 'ary']);
 export const translatorSessionState = z.enum([
   'idle',
   'starting',
