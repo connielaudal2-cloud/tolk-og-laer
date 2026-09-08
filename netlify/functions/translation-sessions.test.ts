@@ -34,9 +34,11 @@ describe('translation sessions function', () => {
 
   it('requires bearer authentication before touching Supabase', async () => {
     stubEnvironment();
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-      new Response(null, { status: 500 }),
-    );
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      void input;
+      void init;
+      return new Response(null, { status: 500 });
+    });
     vi.stubGlobal('fetch', fetchMock);
     const response = await handler(
       request(
@@ -52,8 +54,10 @@ describe('translation sessions function', () => {
 
   it('creates an owner-scoped session through Supabase RLS', async () => {
     stubEnvironment();
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-      new Response(
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      void input;
+      void init;
+      return new Response(
         JSON.stringify([
           {
             id: sessionId,
@@ -63,8 +67,8 @@ describe('translation sessions function', () => {
           },
         ]),
         { status: 201, headers: { 'content-type': 'application/json' } },
-      ),
-    );
+      );
+    });
     vi.stubGlobal('fetch', fetchMock);
     const response = await handler(
       request('/v1/translation/sessions', 'POST', {
@@ -92,12 +96,14 @@ describe('translation sessions function', () => {
     stubEnvironment();
     const endedAt = '2026-09-08T01:00:00.000Z';
     vi.spyOn(Date.prototype, 'toISOString').mockReturnValue(endedAt);
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-      new Response(JSON.stringify([{ id: sessionId, status: 'ended', ended_at: endedAt }]), {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      void input;
+      void init;
+      return new Response(JSON.stringify([{ id: sessionId, status: 'ended', ended_at: endedAt }]), {
         status: 200,
         headers: { 'content-type': 'application/json' },
-      }),
-    );
+      });
+    });
     vi.stubGlobal('fetch', fetchMock);
     const response = await handler(
       request(`/v1/translation/sessions/${sessionId}`, 'PATCH', {
