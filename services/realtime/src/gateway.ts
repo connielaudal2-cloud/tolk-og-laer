@@ -104,7 +104,6 @@ export class RealtimeGateway {
     };
 
     const handleMessage = async (message: RealtimeSocketMessage) => {
-      lastActivityAt = Date.now();
       if (message.type === 'text') {
         let parsed: unknown;
         try {
@@ -122,6 +121,9 @@ export class RealtimeGateway {
       }
     };
 
+    connection.onActivity(() => {
+      lastActivityAt = Date.now();
+    });
     connection.onMessage((message) => {
       processing = processing
         .then(() => handleMessage(message))
