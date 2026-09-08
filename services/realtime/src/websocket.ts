@@ -229,7 +229,7 @@ export const acceptWebSocket = (
   maxPayloadBytes?: number,
 ): WebSocketConnection | null => {
   const key = singleHeader(request.headers['sec-websocket-key']);
-  const versions = headerValues(request.headers['sec-websocket-version']);
+  const versions = headerValues(request.headers['sec-websocket-version'])
     .flatMap((value) => value.split(','))
     .map((value) => value.trim());
   const token = extractRealtimeAccessToken(request);
