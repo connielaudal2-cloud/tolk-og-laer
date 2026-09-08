@@ -1,5 +1,5 @@
 import { createServer, type Server } from 'node:http';
-import type { Socket } from 'node:net';
+import type { Duplex } from 'node:stream';
 import { SupabaseRealtimeAuth } from './auth.js';
 import { RealtimeGateway } from './gateway.js';
 import { acceptWebSocket, extractRealtimeAccessToken } from './websocket.js';
@@ -13,7 +13,7 @@ export type RealtimeServerConfig = {
   maxPayloadBytes?: number;
 };
 
-const reject = (socket: Socket, status: 400 | 401, message: string) => {
+const reject = (socket: Duplex, status: 400 | 401, message: string) => {
   const statusText = status === 401 ? 'Unauthorized' : 'Bad Request';
   socket.end(
     `HTTP/1.1 ${status} ${statusText}\r\nConnection: close\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: ${Buffer.byteLength(message)}\r\n\r\n${message}`,
@@ -63,7 +63,7 @@ export const createRealtimeServer = (config: RealtimeServerConfig): Server => {
         }
         const connection = acceptWebSocket(request, socket, head, config.maxPayloadBytes);
         if (!connection) return;
-        // Gateway performs the same verification again by design so it remains safe when used by other adapters.
+        // Gateway re-verifies by design so it also remains safe behind future transport adapters.
         void gateway.attach(connection, accessToken);
       })
       .catch(() => reject(socket, 401, 'Authentication failed'));
