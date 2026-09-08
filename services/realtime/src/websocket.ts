@@ -9,12 +9,22 @@ export type RealtimeSocketMessage =
 const protocolName = 'tolk-og-laer.realtime.v1';
 const websocketGuid = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
+type HeaderValue = string | string[] | undefined;
+
+const headerValues = (value: HeaderValue): string[] =>
+  value === undefined ? [] : Array.isArray(value) ? value : [value];
+
+const singleHeader = (value: HeaderValue): string | null => {
+  const values = headerValues(value);
+  return values.length === 1 ? values[0]! : null;
+};
+
 export const extractRealtimeAccessToken = (request: IncomingMessage): string | null => {
-  const protocols = request.headers['sec-websocket-protocol']
-    ?.split(',')
+  const protocols = headerValues(request.headers['sec-websocket-protocol'])
+    .flatMap((value) => value.split(','))
     .map((value) => value.trim())
     .filter(Boolean);
-  if (!protocols?.includes(protocolName)) return null;
+  if (!protocols.includes(protocolName)) return null;
   const auth = protocols.find((value) => value.startsWith('auth.'));
   return auth && auth.length > 5 ? auth.slice(5) : null;
 };
@@ -36,11 +46,15 @@ const frame = (opcode: number, payload: Uint8Array): Buffer => {
   return output;
 };
 
+const validCloseCode = (code: number): boolean =>
+  code >= 1000 && code <= 4999 && ![1004, 1005, 1006, 1015].includes(code);
+
 export class WebSocketConnection {
   private buffer = Buffer.alloc(0);
   private closed = false;
   private readonly messageHandlers = new Set<(message: RealtimeSocketMessage) => void>();
   private readonly closeHandlers = new Set<() => void>();
+  private readonly activityHandlers = new Set<() => void>();
 
   constructor(
     private readonly socket: Duplex,
@@ -66,6 +80,11 @@ export class WebSocketConnection {
     return () => this.closeHandlers.delete(handler);
   }
 
+  onActivity(handler: () => void) {
+    this.activityHandlers.add(handler);
+    return () => this.activityHandlers.delete(handler);
+  }
+
   sendText(value: string) {
     if (!this.closed) this.socket.write(frame(0x1, Buffer.from(value, 'utf8')));
   }
@@ -77,6 +96,13 @@ export class WebSocketConnection {
     const payload = Buffer.allocUnsafe(2 + reasonBytes.byteLength);
     payload.writeUInt16BE(code, 0);
     reasonBytes.copy(payload, 2);
+    this.socket.write(frame(0x8, payload));
+    this.socket.end();
+  }
+
+  private replyClose(payload: Buffer) {
+    if (this.closed) return;
+    this.closed = true;
     this.socket.write(frame(0x8, payload));
     this.socket.end();
   }
@@ -134,8 +160,27 @@ export class WebSocketConnection {
     this.buffer = this.buffer.subarray(offset + payloadLength);
     for (let i = 0; i < payload.byteLength; i++) payload[i] = payload[i]! ^ mask[i & 3]!;
 
+    this.emitActivity();
+
     if (opcode === 0x8) {
-      this.close(1000, 'peer_closed');
+      if (payload.byteLength === 1) {
+        this.fail(1002, 'invalid_close_payload');
+        return false;
+      }
+      if (payload.byteLength >= 2) {
+        const code = payload.readUInt16BE(0);
+        if (!validCloseCode(code)) {
+          this.fail(1002, 'invalid_close_code');
+          return false;
+        }
+        try {
+          new TextDecoder('utf-8', { fatal: true }).decode(payload.subarray(2));
+        } catch {
+          this.fail(1007, 'invalid_close_reason');
+          return false;
+        }
+      }
+      this.replyClose(payload);
       return true;
     }
     if (opcode === 0x9) {
@@ -163,12 +208,17 @@ export class WebSocketConnection {
   private emit(message: RealtimeSocketMessage) {
     for (const handler of this.messageHandlers) handler(message);
   }
+
+  private emitActivity() {
+    for (const handler of this.activityHandlers) handler();
+  }
 }
 
 const rejectUpgrade = (socket: Duplex, status: 400 | 401 | 426, message: string) => {
   const statusText = status === 401 ? 'Unauthorized' : status === 426 ? 'Upgrade Required' : 'Bad Request';
+  const websocketVersionHeader = status === 426 ? 'Sec-WebSocket-Version: 13\r\n' : '';
   socket.end(
-    `HTTP/1.1 ${status} ${statusText}\r\nConnection: close\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: ${Buffer.byteLength(message)}\r\n\r\n${message}`,
+    `HTTP/1.1 ${status} ${statusText}\r\nConnection: close\r\n${websocketVersionHeader}Content-Type: text/plain; charset=utf-8\r\nContent-Length: ${Buffer.byteLength(message)}\r\n\r\n${message}`,
   );
 };
 
@@ -178,14 +228,16 @@ export const acceptWebSocket = (
   head: Buffer,
   maxPayloadBytes?: number,
 ): WebSocketConnection | null => {
-  const key = request.headers['sec-websocket-key'];
-  const version = request.headers['sec-websocket-version'];
+  const key = singleHeader(request.headers['sec-websocket-key']);
+  const versions = headerValues(request.headers['sec-websocket-version']);
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim());
   const token = extractRealtimeAccessToken(request);
-  if (version !== '13') {
+  if (!versions.includes('13')) {
     rejectUpgrade(socket, 426, 'WebSocket version 13 is required');
     return null;
   }
-  if (typeof key !== 'string' || !token) {
+  if (!key || !token) {
     rejectUpgrade(socket, token ? 400 : 401, token ? 'Invalid WebSocket handshake' : 'Authentication is required');
     return null;
   }
