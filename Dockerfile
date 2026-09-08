@@ -1,3 +1,4 @@
+# Railway deployment entrypoint for the realtime service
 FROM node:24-bookworm-slim
 WORKDIR /app
 COPY . .
