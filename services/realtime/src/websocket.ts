@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
-import type { Socket } from 'node:net';
+import type { Duplex } from 'node:stream';
 
 export type RealtimeSocketMessage =
   | { type: 'text'; data: string }
@@ -43,7 +43,7 @@ export class WebSocketConnection {
   private readonly closeHandlers = new Set<() => void>();
 
   constructor(
-    private readonly socket: Socket,
+    private readonly socket: Duplex,
     head: Buffer,
     private readonly maxPayloadBytes = 512 * 1024,
   ) {
@@ -132,7 +132,7 @@ export class WebSocketConnection {
     offset += 4;
     const payload = Buffer.from(this.buffer.subarray(offset, offset + payloadLength));
     this.buffer = this.buffer.subarray(offset + payloadLength);
-    for (let i = 0; i < payload.byteLength; i++) payload[i] ^= mask[i & 3]!;
+    for (let i = 0; i < payload.byteLength; i++) payload[i] = payload[i]! ^ mask[i & 3]!;
 
     if (opcode === 0x8) {
       this.close(1000, 'peer_closed');
@@ -165,7 +165,7 @@ export class WebSocketConnection {
   }
 }
 
-const rejectUpgrade = (socket: Socket, status: 400 | 401 | 426, message: string) => {
+const rejectUpgrade = (socket: Duplex, status: 400 | 401 | 426, message: string) => {
   const statusText = status === 401 ? 'Unauthorized' : status === 426 ? 'Upgrade Required' : 'Bad Request';
   socket.end(
     `HTTP/1.1 ${status} ${statusText}\r\nConnection: close\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: ${Buffer.byteLength(message)}\r\n\r\n${message}`,
@@ -174,7 +174,7 @@ const rejectUpgrade = (socket: Socket, status: 400 | 401 | 426, message: string)
 
 export const acceptWebSocket = (
   request: IncomingMessage,
-  socket: Socket,
+  socket: Duplex,
   head: Buffer,
   maxPayloadBytes?: number,
 ): WebSocketConnection | null => {
