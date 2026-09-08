@@ -1,0 +1,24 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json eslint.config.js ./
+COPY packages/contracts ./packages/contracts
+COPY services/realtime ./services/realtime
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @tolk-og-laer/contracts build \
+ && pnpm --filter @tolk-og-laer/realtime build
+
+FROM node:24-bookworm-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+RUN corepack enable
+
+COPY --from=build /app /app
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+
+CMD ["pnpm", "--filter", "@tolk-og-laer/realtime", "start"]

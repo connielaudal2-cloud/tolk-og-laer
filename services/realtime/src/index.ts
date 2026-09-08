@@ -1,4 +1,13 @@
 export { RealtimeSession, reconnectDelayMs, type SessionAction } from './session.js';
+export { SupabaseRealtimeAuth, type RealtimeAuthConfig, type RealtimeIdentity } from './auth.js';
+export { RealtimeGateway, type RealtimeGatewayAuth, type RealtimeGatewayOptions } from './gateway.js';
+export { createRealtimeServer, type RealtimeServerConfig } from './server.js';
+export {
+  WebSocketConnection,
+  acceptWebSocket,
+  extractRealtimeAccessToken,
+  type RealtimeSocketMessage,
+} from './websocket.js';
 export {
   AdaptiveEnergyVad,
   AudioPreprocessingPipeline,
