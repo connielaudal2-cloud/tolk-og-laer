@@ -1,4 +1,5 @@
 [build]
+  base = "."
   command = "pnpm --filter @tolk-og-laer/admin build"
   publish = "apps/admin/dist"
 
