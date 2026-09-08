@@ -14,7 +14,7 @@ export {
   type VadConfig,
   type VadDecision,
   type VadState,
-} from './audio/index.js';
+} from '@tolk-og-laer/contracts';
 
 export const realtimeServiceBoundary = {
   transport: 'long-lived-bidirectional',
