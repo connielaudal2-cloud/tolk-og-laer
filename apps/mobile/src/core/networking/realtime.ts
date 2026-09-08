@@ -11,6 +11,11 @@ type SocketLike = Pick<
   WebSocket,
   'readyState' | 'binaryType' | 'send' | 'close' | 'onopen' | 'onmessage' | 'onerror' | 'onclose'
 > & { bufferedAmount?: number };
+type ConnectionWaiter = {
+  resolve: () => void;
+  reject: (error: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
+};
 export type RealtimeTransportOptions = {
   url: string;
   accessToken: string;
@@ -27,6 +32,7 @@ export class RealtimeTransport {
   private lastServerSequence = -1;
   private reconnectAttempts = 0;
   private intentionallyClosed = false;
+  private readonly connectionWaiters = new Set<ConnectionWaiter>();
   constructor(private readonly options: RealtimeTransportOptions) {}
 
   connect() {
@@ -45,6 +51,7 @@ export class RealtimeTransport {
     socket.onopen = () => {
       this.reconnectAttempts = 0;
       this.setStatus('connected');
+      this.resolveConnectionWaiters();
     };
     socket.onmessage = (message) => this.receive(message.data);
     socket.onerror = () => this.setStatus('reconnecting');
@@ -52,6 +59,24 @@ export class RealtimeTransport {
       if (!this.intentionallyClosed) this.scheduleReconnect();
     };
     this.socket = socket;
+  }
+
+  async connectAndWait(timeoutMs = 10_000): Promise<void> {
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+      throw new RangeError('Connection timeout must be positive');
+    this.connect();
+    if (this.socket?.readyState === WebSocket.OPEN) return;
+    await new Promise<void>((resolve, reject) => {
+      const waiter: ConnectionWaiter = {
+        resolve,
+        reject,
+        timeout: setTimeout(() => {
+          this.connectionWaiters.delete(waiter);
+          reject(new Error('Realtime connection timed out'));
+        }, timeoutMs),
+      };
+      this.connectionWaiters.add(waiter);
+    });
   }
 
   sendControl(event: ClientControlEvent) {
@@ -74,6 +99,7 @@ export class RealtimeTransport {
   close() {
     this.intentionallyClosed = true;
     this.socket?.close(1000, 'client_closed');
+    this.rejectConnectionWaiters(new Error('Realtime transport closed'));
     this.setStatus('closed');
   }
 
@@ -88,6 +114,7 @@ export class RealtimeTransport {
   private scheduleReconnect() {
     const max = this.options.maxReconnectAttempts ?? 6;
     if (++this.reconnectAttempts > max) {
+      this.rejectConnectionWaiters(new Error('Realtime reconnect attempts exhausted'));
       this.setStatus('disconnected');
       return;
     }
@@ -98,6 +125,22 @@ export class RealtimeTransport {
   private assertConnected() {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN)
       throw new Error('Realtime transport is not connected');
+  }
+
+  private resolveConnectionWaiters() {
+    for (const waiter of this.connectionWaiters) {
+      clearTimeout(waiter.timeout);
+      waiter.resolve();
+    }
+    this.connectionWaiters.clear();
+  }
+
+  private rejectConnectionWaiters(error: Error) {
+    for (const waiter of this.connectionWaiters) {
+      clearTimeout(waiter.timeout);
+      waiter.reject(error);
+    }
+    this.connectionWaiters.clear();
   }
 
   private setStatus(status: RealtimeTransportStatus) {
