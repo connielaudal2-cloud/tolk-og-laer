@@ -132,5 +132,5 @@ export default async (request: Request) => {
 };
 
 export const config = {
-  path: ['/v1/translation/sessions', '/v1/translation/sessions/:sessionId'],
+  path: ['/v1/translation/sessions', '/v1/translation/sessions/*'],
 };
