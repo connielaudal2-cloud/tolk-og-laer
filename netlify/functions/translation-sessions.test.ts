@@ -3,15 +3,17 @@ import handler from './translation-sessions.mts';
 
 const sessionId = '550e8400-e29b-41d4-a716-446655440000';
 
-const request = (path: string, method: string, body?: unknown, authorized = true) =>
-  new Request(`https://tolk-og-laer.test${path}`, {
+const request = (path: string, method: string, body?: unknown, authorized = true) => {
+  const init: RequestInit = {
     method,
     headers: {
       ...(authorized ? { authorization: 'Bearer user-token' } : {}),
       'content-type': 'application/json',
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  };
+  if (body !== undefined) init.body = JSON.stringify(body);
+  return new Request(`https://tolk-og-laer.test${path}`, init);
+};
 
 describe('translation sessions function', () => {
   afterEach(() => {
@@ -32,7 +34,9 @@ describe('translation sessions function', () => {
 
   it('requires bearer authentication before touching Supabase', async () => {
     stubEnvironment();
-    const fetchMock = vi.fn();
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(null, { status: 500 }),
+    );
     vi.stubGlobal('fetch', fetchMock);
     const response = await handler(
       request(
@@ -48,7 +52,7 @@ describe('translation sessions function', () => {
 
   it('creates an owner-scoped session through Supabase RLS', async () => {
     stubEnvironment();
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
         JSON.stringify([
           {
@@ -78,7 +82,7 @@ describe('translation sessions function', () => {
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [, init] = fetchMock.mock.calls[0]!;
-    expect((init as RequestInit).headers).toMatchObject({
+    expect(init?.headers).toMatchObject({
       apikey: 'publishable-key',
       authorization: 'Bearer user-token',
     });
@@ -88,7 +92,7 @@ describe('translation sessions function', () => {
     stubEnvironment();
     const endedAt = '2026-09-08T01:00:00.000Z';
     vi.spyOn(Date.prototype, 'toISOString').mockReturnValue(endedAt);
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(JSON.stringify([{ id: sessionId, status: 'ended', ended_at: endedAt }]), {
         status: 200,
         headers: { 'content-type': 'application/json' },
