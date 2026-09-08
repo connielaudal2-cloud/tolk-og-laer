@@ -3,13 +3,7 @@ import {
   type AudioQuality,
   type ProcessedAudioFrame,
 } from '@tolk-og-laer/contracts';
-import {
-  addAudioFrameListener,
-  startCapture,
-  stopCapture,
-  type AudioFrame,
-  type CaptureOptions,
-} from '@tolk-og-laer/native-audio';
+import type { AudioFrame, CaptureOptions } from '@tolk-og-laer/native-audio';
 
 export type AudioFrameSubscription = { remove(): void };
 export type NativeCaptureAdapter = {
@@ -36,17 +30,11 @@ export type AudioStreamFrameReport = {
 };
 export type NativeAudioStreamOptions = {
   transport: AudioTransport;
-  capture?: NativeCaptureAdapter;
+  capture: NativeCaptureAdapter;
   processor?: AudioPreprocessingPipeline;
   captureOptions?: CaptureOptions;
   onFrame?: (report: AudioStreamFrameReport) => void;
   onCaptureGap?: (expected: number, received: number) => void;
-};
-
-const defaultCapture: NativeCaptureAdapter = {
-  addFrameListener: addAudioFrameListener,
-  start: startCapture,
-  stop: stopCapture,
 };
 
 export const decodeBase64Pcm = (value: string): Uint8Array => {
@@ -57,7 +45,6 @@ export const decodeBase64Pcm = (value: string): Uint8Array => {
 };
 
 export class NativeAudioStream {
-  private readonly capture: NativeCaptureAdapter;
   private readonly processor: AudioPreprocessingPipeline;
   private subscription?: AudioFrameSubscription;
   private running = false;
@@ -72,16 +59,15 @@ export class NativeAudioStream {
   };
 
   constructor(private readonly options: NativeAudioStreamOptions) {
-    this.capture = options.capture ?? defaultCapture;
     this.processor = options.processor ?? new AudioPreprocessingPipeline();
   }
 
   async start() {
     if (this.running) throw new Error('Native audio stream is already running');
     this.resetSession();
-    this.subscription = this.capture.addFrameListener((frame) => this.handleFrame(frame));
+    this.subscription = this.options.capture.addFrameListener((frame) => this.handleFrame(frame));
     try {
-      await this.capture.start(
+      await this.options.capture.start(
         this.options.captureOptions ?? { sampleRate: 16000, frameDurationMs: 20 },
       );
       this.running = true;
@@ -95,7 +81,7 @@ export class NativeAudioStream {
   async stop() {
     if (!this.subscription && !this.running) return;
     try {
-      if (this.running) await this.capture.stop();
+      if (this.running) await this.options.capture.stop();
     } finally {
       this.subscription?.remove();
       this.subscription = undefined;
