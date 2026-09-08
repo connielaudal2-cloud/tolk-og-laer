@@ -9,8 +9,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../src/core/auth';
+
+type MobileSession = Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'];
 
 const choices = [
   { title: 'Oversett', description: 'Forstå en samtale på norsk mens den skjer.' },
@@ -18,7 +19,7 @@ const choices = [
 ] as const;
 
 export default function HomeScreen() {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<MobileSession>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
