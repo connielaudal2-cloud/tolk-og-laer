@@ -10,14 +10,16 @@ export type RealtimeTransportStatus =
 type SocketLike = Pick<
   WebSocket,
   'readyState' | 'binaryType' | 'send' | 'close' | 'onopen' | 'onmessage' | 'onerror' | 'onclose'
->;
+> & { bufferedAmount?: number };
 export type RealtimeTransportOptions = {
   url: string;
   accessToken: string;
   createSocket?: (url: string, protocols: string[]) => SocketLike;
   onEvent: (event: ServerControlEvent) => void;
   onStatus?: (status: RealtimeTransportStatus) => void;
+  onBackpressure?: (bufferedBytes: number, limitBytes: number) => void;
   maxReconnectAttempts?: number;
+  maxBufferedAudioBytes?: number;
 };
 
 export class RealtimeTransport {
@@ -56,10 +58,19 @@ export class RealtimeTransport {
     this.assertConnected();
     this.socket!.send(JSON.stringify(event));
   }
-  sendAudio(sequence: number, pcm: Uint8Array) {
+
+  sendAudio(sequence: number, pcm: Uint8Array): boolean {
     this.assertConnected();
+    const buffered = this.socket!.bufferedAmount ?? 0;
+    const limit = this.options.maxBufferedAudioBytes ?? 256 * 1024;
+    if (buffered > limit) {
+      this.options.onBackpressure?.(buffered, limit);
+      return false;
+    }
     this.socket!.send(encodeAudioFrame(sequence, pcm));
+    return true;
   }
+
   close() {
     this.intentionallyClosed = true;
     this.socket?.close(1000, 'client_closed');
@@ -73,6 +84,7 @@ export class RealtimeTransport {
     this.lastServerSequence = event.sequence;
     this.options.onEvent(event);
   }
+
   private scheduleReconnect() {
     const max = this.options.maxReconnectAttempts ?? 6;
     if (++this.reconnectAttempts > max) {
@@ -82,10 +94,12 @@ export class RealtimeTransport {
     this.setStatus('reconnecting');
     setTimeout(() => this.connect(), Math.min(15_000, 500 * 2 ** (this.reconnectAttempts - 1)));
   }
+
   private assertConnected() {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN)
       throw new Error('Realtime transport is not connected');
   }
+
   private setStatus(status: RealtimeTransportStatus) {
     this.options.onStatus?.(status);
   }
