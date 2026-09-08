@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
   clientControlEvent,
-  type ClientControlEvent,
+  serverControlEvent,
   type ServerControlEvent,
 } from '@tolk-og-laer/contracts';
 import { RealtimeSession } from './session.js';
@@ -18,6 +18,8 @@ export type RealtimeGatewayOptions = {
   idleTimeoutMs?: number;
   maxSessionMs?: number;
 };
+
+type ServerEventInput = { type: ServerControlEvent['type']; payload: unknown };
 
 export class RealtimeGateway {
   private readonly heartbeatIntervalMs: number;
@@ -47,16 +49,16 @@ export class RealtimeGateway {
     let processing = Promise.resolve();
     let closed = false;
 
-    const send = (event: Omit<ServerControlEvent, 'schemaVersion' | 'eventId' | 'sequence' | 'timestamp'>) => {
+    const send = (event: ServerEventInput) => {
       if (!boundSessionId || closed) return;
-      const envelope = {
+      const envelope = serverControlEvent.parse({
         ...event,
-        schemaVersion: '1' as const,
+        schemaVersion: '1',
         sessionId: boundSessionId,
         eventId: randomUUID(),
         sequence: serverSequence++,
         timestamp: new Date().toISOString(),
-      } satisfies ServerControlEvent;
+      });
       connection.sendText(JSON.stringify(envelope));
     };
 
@@ -83,6 +85,7 @@ export class RealtimeGateway {
 
       const action = session.acceptControl(event);
       if (action.type === 'duplicate') return;
+      if (action.type !== 'control') throw new Error('invalid_control_action');
       const accepted = action.event;
       if (accepted.type === 'session.start') {
         send({
@@ -92,7 +95,10 @@ export class RealtimeGateway {
       } else if (accepted.type === 'audio.start') {
         send({ type: 'audio.ready', payload: accepted.payload });
       } else if (accepted.type === 'session.end') {
-        send({ type: 'session.ended', payload: { reason: accepted.payload.reason ?? 'client_requested' } });
+        send({
+          type: 'session.ended',
+          payload: { reason: accepted.payload.reason ?? 'client_requested' },
+        });
         connection.close(1000, 'session_ended');
       }
     };
@@ -133,9 +139,12 @@ export class RealtimeGateway {
     const idleTimer = setInterval(() => {
       if (Date.now() - lastActivityAt > this.idleTimeoutMs) connection.close(1001, 'idle_timeout');
     }, Math.min(this.heartbeatIntervalMs, this.idleTimeoutMs));
-    idleTimer.unref?.();
-    const maxSessionTimer = setTimeout(() => connection.close(1000, 'max_session_duration'), this.maxSessionMs);
-    maxSessionTimer.unref?.();
+    idleTimer.unref();
+    const maxSessionTimer = setTimeout(
+      () => connection.close(1000, 'max_session_duration'),
+      this.maxSessionMs,
+    );
+    maxSessionTimer.unref();
     return true;
   }
 }
