@@ -4,3 +4,7 @@ export {
   type RealtimeTransportOptions,
   type RealtimeTransportStatus,
 } from './realtime';
+export {
+  TranslationApiError,
+  TranslationSessionApi,
+} from './translation-api';
