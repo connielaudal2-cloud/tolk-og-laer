@@ -21,7 +21,7 @@ describe('RealtimeTransport', () => {
       const send = vi.fn();
       const onBackpressure = vi.fn();
       const socket = {
-        readyState: 1,
+        readyState: 1 as const,
         binaryType: 'blob' as BinaryType,
         bufferedAmount: 4097,
         send,
