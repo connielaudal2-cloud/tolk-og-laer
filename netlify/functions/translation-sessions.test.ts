@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import handler from './translation-sessions.mjs';
+import handler from './translation-sessions.mts';
 
 const sessionId = '550e8400-e29b-41d4-a716-446655440000';
 
